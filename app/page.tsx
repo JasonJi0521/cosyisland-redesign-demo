@@ -1,8 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
-
-type Mode = "before" | "after";
+import { useState } from "react";
 
 const products = [
   { name: "GraceLithe Mule", note: "Best seller · Regular + Wide", price: "$109", image: "./shoe-1.jpg" },
@@ -11,7 +9,6 @@ const products = [
 ];
 
 export default function Home() {
-  const [mode, setMode] = useState<Mode>("after");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [fitOpen, setFitOpen] = useState(false);
   const [fitStep, setFitStep] = useState(0);
@@ -19,32 +16,19 @@ export default function Home() {
   const [width, setWidth] = useState("Regular");
   const [added, setAdded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const pageRef = useRef<HTMLDivElement>(null);
-
-  function switchMode(next: Mode) {
-    const y = window.scrollY;
-    setMode(next);
-    requestAnimationFrame(() => window.scrollTo({ top: y }));
-  }
-
   function openProduct() {
     setDrawerOpen(true);
     setMenuOpen(false);
   }
 
   return (
-    <div className={"site-demo " + mode} ref={pageRef}>
-      <DemoBar mode={mode} onChange={switchMode} />
-      {mode === "after" ? (
-        <AfterSite
-          openProduct={openProduct}
-          openFit={() => { setFitStep(0); setFitOpen(true); }}
-          menuOpen={menuOpen}
-          setMenuOpen={setMenuOpen}
-        />
-      ) : (
-        <BeforeSite openProduct={openProduct} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
-      )}
+    <div className="site-demo">
+      <AfterSite
+        openProduct={openProduct}
+        openFit={() => { setFitStep(0); setFitOpen(true); }}
+        menuOpen={menuOpen}
+        setMenuOpen={setMenuOpen}
+      />
       {drawerOpen && (
         <ProductDrawer
           close={() => setDrawerOpen(false)}
@@ -77,33 +61,15 @@ export default function Home() {
   );
 }
 
-function DemoBar({ mode, onChange }: { mode: Mode; onChange: (mode: Mode) => void }) {
-  return (
-    <div className="demo-bar">
-      <div className="demo-message">
-        <span>网站对比</span>
-        <strong>{mode === "after" ? "优化后：一打开就知道为什么值得买" : "之前：一打开先看到打折"}</strong>
-      </div>
-      <div className="mode-switch" role="group" aria-label="切换优化前后网站">
-        <button className={mode === "before" ? "active" : ""} onClick={() => onChange("before")}>之前</button>
-        <button className={mode === "after" ? "active" : ""} onClick={() => onChange("after")}>优化后</button>
-      </div>
-    </div>
-  );
-}
-
 function Header(props: {
-  before?: boolean;
   openProduct: () => void;
   menuOpen: boolean;
   setMenuOpen: (open: boolean) => void;
 }) {
   return (
     <>
-      <div className={"announcement " + (props.before ? "old" : "")}>
-        {props.before ? "SPRING SALE · UP TO 50% OFF · SHOP NOW" : "COMPLIMENTARY SHIPPING & EASY 30-DAY RETURNS"}
-      </div>
-      <header className={"brand-header " + (props.before ? "old" : "")}>
+      <div className="announcement">COMPLIMENTARY SHIPPING & EASY 30-DAY RETURNS</div>
+      <header className="brand-header">
         <button className="menu-trigger" onClick={() => props.setMenuOpen(!props.menuOpen)} aria-label="Open menu">
           <i /><i />
         </button>
@@ -147,6 +113,10 @@ function AfterSite(props: {
 
       <section className="hero">
         <div className="hero-copy">
+          <div className="cn-callout hero-cn">
+            <span>第一眼先讲清楚</span>
+            <strong>好看、舒服，宽脚也能穿。</strong>
+          </div>
           <p className="micro-label"><i /> APMA ACCEPTED COMFORT</p>
           <h1>The heel<br />you won’t<br /><em>kick off.</em></h1>
           <p className="hero-intro">Elegant enough for every plan. Cushioned, flexible and available in wide fits—so your day never ends because your shoes do.</p>
@@ -161,7 +131,7 @@ function AfterSite(props: {
           </div>
         </div>
         <div className="hero-image">
-          <img src="./hero.jpg" alt="Cosy Island comfort shoes" />
+          <img src="./og-v2.png" alt="Burgundy Cosy Island knit mule on a sculptural pedestal" />
           <div className="hero-product">
             <img src="./shoe-1.jpg" alt="GraceLithe Mule" />
             <div><span>THE GRACELITHE</span><b>$109</b></div>
@@ -177,6 +147,10 @@ function AfterSite(props: {
 
       <section className="comfort-editorial" id="comfort">
         <div className="section-number">01 — WHY THEY FEEL DIFFERENT</div>
+        <div className="cn-highlight">
+          <span>产品卖点</span>
+          <strong>不只说“舒服”，<br />而是把为什么舒服讲明白。</strong>
+        </div>
         <div className="comfort-headline">
           <h2>Comfort,<br /><em>engineered</em><br />beautifully.</h2>
           <p>We rebuilt the classic heel around the foot—not the other way around. Every layer flexes, cushions and supports.</p>
@@ -214,6 +188,10 @@ function AfterSite(props: {
       <section className="review-editorial" id="reviews">
         <div className="review-photo"><img src="./shoe-2.jpg" alt="GraceLithe top view" /><span>WORN FOR 11 HOURS</span></div>
         <div className="review-copy">
+          <div className="cn-highlight light">
+            <span>用户反馈</span>
+            <strong>真实的人、真实的评价，<br />比打折更能让人下单。</strong>
+          </div>
           <p className="micro-label light"><i /> VERIFIED BUYER</p>
           <blockquote>“From the office to dinner—and I never once thought about my feet.”</blockquote>
           <div className="review-person"><span>JM</span><div><b>Jessica M.</b><small>New York · Wide fit</small></div><strong>★★★★★</strong></div>
@@ -223,6 +201,10 @@ function AfterSite(props: {
 
       <section className="wide-story" id="story">
         <div className="wide-copy">
+          <div className="cn-highlight compact">
+            <span>AI选码</span>
+            <strong>帮顾客选对尺码，<br />少退货、少犹豫。</strong>
+          </div>
           <span>03 — FIT IS PERSONAL</span>
           <h2>More room.<br />Less guessing.</h2>
           <p>Feet aren’t one-width-fits-all. Selected styles come in Regular A–C and Wide D–E, while our AI Fit assistant learns from real customer feedback to recommend yours.</p>
@@ -236,6 +218,10 @@ function AfterSite(props: {
       </section>
 
       <section className="social-section">
+        <div className="cn-highlight social-cn">
+          <span>社媒打通</span>
+          <strong>社媒不只赚点赞，<br />还要把人带回官网买鞋。</strong>
+        </div>
         <div className="social-heading"><span>@COSYISLAND_OFFICIAL</span><h2>Real days.<br />Real outfits.<br /><em>Real comfort.</em></h2></div>
         <div className="social-grid">
           <div><img src="./shoe-5.jpg" alt="Cosy Island social style one" /><span>18K SAVES</span></div>
@@ -254,29 +240,6 @@ function AfterSite(props: {
         </div>
         <div className="footer-bottom"><span>© 2026 COSY ISLAND</span><span>NEW YORK · SHANGHAI · EVERYWHERE YOU GO</span><span>Privacy · Terms</span></div>
       </footer>
-    </main>
-  );
-}
-
-function BeforeSite(props: { openProduct: () => void; menuOpen: boolean; setMenuOpen: (open: boolean) => void }) {
-  return (
-    <main id="top" className="before-site">
-      <Header before openProduct={props.openProduct} menuOpen={props.menuOpen} setMenuOpen={props.setMenuOpen} />
-      <section className="old-hero">
-        <img src="./hero.jpg" alt="Cosy Island campaign" />
-        <div className="old-hero-shade" />
-        <div className="old-hero-copy"><span>SPRING EDIT</span><h1>In Summer&apos;s Wake,<br />Savings Gently Arrive</h1><p>UP TO 50% OFF</p><button onClick={props.openProduct}>DISCOVER NOW</button></div>
-      </section>
-      <div className="old-benefits"><span>FREE SHIPPING</span><span>30-DAY RETURNS</span><span>SECURE PAYMENTS</span><span>ONLINE SUPPORT</span></div>
-      <section className="old-shop" id="shop">
-        <p>OUR PICKS</p><h2>Best Sellers</h2>
-        <div className="old-grid">
-          {products.map(item => <article key={item.name}><button onClick={props.openProduct}><img src={item.image} alt={item.name} /><span>♡</span></button><h3>{item.name}</h3><p>★★★★★ 4.9</p><b>{item.price}</b></article>)}
-        </div>
-      </section>
-      <section className="old-promo"><p>NEW SEASON</p><h2>Find Your<br />Perfect Pair</h2><span>Explore new arrivals designed for every moment.</span><button onClick={props.openProduct}>SHOP ALL</button></section>
-      <section className="old-newsletter"><h2>Join our world</h2><p>Sign up for exclusive offers and new arrivals.</p><div><input placeholder="Your email" aria-label="Your email" /><button>SUBSCRIBE</button></div></section>
-      <footer className="old-footer"><b>COSY ISLAND</b><p>SHOP · ABOUT · CONTACT · RETURNS</p><small>© 2026 COSY ISLAND. ALL RIGHTS RESERVED.</small></footer>
     </main>
   );
 }

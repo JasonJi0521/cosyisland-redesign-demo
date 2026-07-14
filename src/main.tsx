@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import "@fontsource-variable/cormorant-garamond";
 import "@fontsource-variable/manrope";
+import "@fontsource-variable/noto-sans-sc";
 import "../app/globals.css";
 import Home from "../app/page";
 
