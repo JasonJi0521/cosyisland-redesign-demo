@@ -24,6 +24,10 @@
 
 # debug
 npm-debug.log*
+dev.log
+dev-error.log
+preview.log
+preview-error.log
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*

@@ -1,308 +1,341 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
-type View = "home" | "product" | "social";
 type Mode = "before" | "after";
-type Source = "TikTok" | "Instagram" | "Pinterest";
 
-const product = {
-  name: "GraceLithe Pointed Toe Heeled Mule",
-  price: "$109",
-  rating: "4.9",
-  reviews: "362 reviews",
-};
-
-const notes = {
-  home: {
-    before: "原来：先看到活动，品牌为什么好不清楚",
-    after: "优化后：3 秒讲清“好看，也能舒服走一天”",
-  },
-  product: {
-    before: "原来：选项太多，手机上容易选乱、退出",
-    after: "优化后：先帮客人选对尺码，再下单",
-  },
-  social: {
-    before: "原来：社媒点进来还是普通首页，内容接不上",
-    after: "优化后：看到什么广告，点进来就接着看什么",
-  },
-};
+const products = [
+  { name: "GraceLithe Mule", note: "Best seller · Regular + Wide", price: "$109", image: "./shoe-1.jpg" },
+  { name: "AirWeave Slingback", note: "New · All-day cushioning", price: "$119", image: "./shoe-5.jpg" },
+  { name: "MousseFit Pointed Heel", note: "Work-to-dinner favorite", price: "$109", image: "./shoe-6.jpg" },
+];
 
 export default function Home() {
-  const [view, setView] = useState<View>("home");
   const [mode, setMode] = useState<Mode>("after");
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [fitOpen, setFitOpen] = useState(false);
   const [fitStep, setFitStep] = useState(0);
   const [size, setSize] = useState("7");
   const [width, setWidth] = useState("Regular");
-  const [source, setSource] = useState<Source>("TikTok");
   const [added, setAdded] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const pageRef = useRef<HTMLDivElement>(null);
 
   function switchMode(next: Mode) {
-    const y = scrollRef.current?.scrollTop || 0;
+    const y = window.scrollY;
     setMode(next);
-    requestAnimationFrame(() => {
-      if (scrollRef.current) scrollRef.current.scrollTop = y;
-    });
+    requestAnimationFrame(() => window.scrollTo({ top: y }));
   }
 
-  function go(next: View) {
-    setView(next);
-    requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" }));
+  function openProduct() {
+    setDrawerOpen(true);
+    setMenuOpen(false);
   }
 
   return (
-    <main className="demo-shell">
-      <aside className="pitch-panel">
-        <p className="pitch-kicker">COSY ISLAND · 独立站优化演示</p>
-        <h1>不是换个颜色，<br />是让客人更愿意买。</h1>
-        <p className="pitch-intro">用手机点下面三个页面，再切换“现在 / 优化后”，可以直接看到差别。</p>
-        <div className="pitch-steps">
-          <PitchStep no="01" title="首页" copy="先把品牌讲明白" active={view === "home"} onClick={() => go("home")} />
-          <PitchStep no="02" title="商品页" copy="少犹豫，选对尺码" active={view === "product"} onClick={() => go("product")} />
-          <PitchStep no="03" title="社媒落地页" copy="让广告流量不浪费" active={view === "social"} onClick={() => go("social")} />
-        </div>
-        <div className="pitch-proof">
-          <span>这个 Demo 能看见：</span>
-          <b>品牌更清楚</b><b>手机更好用</b><b>社媒接得住</b><b>AI 能帮成交</b>
-        </div>
-      </aside>
+    <div className={"site-demo " + mode} ref={pageRef}>
+      <DemoBar mode={mode} onChange={switchMode} />
+      {mode === "after" ? (
+        <AfterSite
+          openProduct={openProduct}
+          openFit={() => { setFitStep(0); setFitOpen(true); }}
+          menuOpen={menuOpen}
+          setMenuOpen={setMenuOpen}
+        />
+      ) : (
+        <BeforeSite openProduct={openProduct} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+      )}
+      {drawerOpen && (
+        <ProductDrawer
+          close={() => setDrawerOpen(false)}
+          openFit={() => { setFitStep(0); setFitOpen(true); }}
+          size={size}
+          setSize={setSize}
+          width={width}
+          setWidth={setWidth}
+          added={added}
+          add={() => {
+            setAdded(true);
+            setTimeout(() => setAdded(false), 1800);
+          }}
+        />
+      )}
+      {fitOpen && (
+        <FitAssistant
+          step={fitStep}
+          setStep={setFitStep}
+          close={() => setFitOpen(false)}
+          choose={() => {
+            setSize("7");
+            setWidth("Wide");
+            setFitOpen(false);
+            setDrawerOpen(true);
+          }}
+        />
+      )}
+    </div>
+  );
+}
 
-      <section className="phone-wrap">
-        <div className="compare-bar">
-          <div className="compare-title">一键看前后差别</div>
-          <div className="compare-switch">
-            <button className={mode === "before" ? "selected" : ""} onClick={() => switchMode("before")}>现在的网站</button>
-            <button className={mode === "after" ? "selected" : ""} onClick={() => switchMode("after")}>优化后</button>
-          </div>
-          <div className={"change-note " + mode}>{notes[view][mode]}</div>
-        </div>
+function DemoBar({ mode, onChange }: { mode: Mode; onChange: (mode: Mode) => void }) {
+  return (
+    <div className="demo-bar">
+      <div className="demo-message">
+        <span>网站对比</span>
+        <strong>{mode === "after" ? "优化后：一打开就知道为什么值得买" : "之前：一打开先看到打折"}</strong>
+      </div>
+      <div className="mode-switch" role="group" aria-label="切换优化前后网站">
+        <button className={mode === "before" ? "active" : ""} onClick={() => onChange("before")}>之前</button>
+        <button className={mode === "after" ? "active" : ""} onClick={() => onChange("after")}>优化后</button>
+      </div>
+    </div>
+  );
+}
 
-        <div className={"phone " + mode}>
-          <div className="device-status"><span>9:41</span><span>● ◔ ▰</span></div>
-          <div className="site-scroll" ref={scrollRef}>
-            <SiteHeader mode={mode} go={go} />
-            {view === "home" && (mode === "before" ? <BeforeHome go={go} /> : <AfterHome go={go} />)}
-            {view === "product" && (mode === "before" ? <BeforeProduct /> :
-              <AfterProduct size={size} setSize={setSize} width={width} setWidth={setWidth}
-                openFit={() => { setFitStep(0); setFitOpen(true); }}
-                added={added} add={() => { setAdded(true); setTimeout(() => setAdded(false), 2200); }} />)}
-            {view === "social" && (mode === "before" ? <BeforeSocial /> :
-              <AfterSocial source={source} setSource={setSource} go={go} />)}
+function Header(props: {
+  before?: boolean;
+  openProduct: () => void;
+  menuOpen: boolean;
+  setMenuOpen: (open: boolean) => void;
+}) {
+  return (
+    <>
+      <div className={"announcement " + (props.before ? "old" : "")}>
+        {props.before ? "SPRING SALE · UP TO 50% OFF · SHOP NOW" : "COMPLIMENTARY SHIPPING & EASY 30-DAY RETURNS"}
+      </div>
+      <header className={"brand-header " + (props.before ? "old" : "")}>
+        <button className="menu-trigger" onClick={() => props.setMenuOpen(!props.menuOpen)} aria-label="Open menu">
+          <i /><i />
+        </button>
+        <a className="brand-mark" href="#top" aria-label="Cosy Island home">
+          <span className="brand-monogram">ci</span>
+          <b>COSY ISLAND</b>
+        </a>
+        <nav className="desktop-nav" aria-label="Main navigation">
+          <a href="#shop">Shop</a>
+          <a href="#comfort">Comfort</a>
+          <a href="#reviews">Reviews</a>
+          <a href="#story">Our story</a>
+        </nav>
+        <div className="header-actions">
+          <button aria-label="Search">⌕</button>
+          <button aria-label="Account">○</button>
+          <button className="bag-action" onClick={props.openProduct} aria-label="Shopping bag">Bag <sup>0</sup></button>
+        </div>
+      </header>
+      {props.menuOpen && (
+        <div className="mobile-menu">
+          <a href="#shop" onClick={() => props.setMenuOpen(false)}>Shop the collection <span>↗</span></a>
+          <a href="#comfort" onClick={() => props.setMenuOpen(false)}>Why they feel different <span>↗</span></a>
+          <a href="#reviews" onClick={() => props.setMenuOpen(false)}>Real women, real days <span>↗</span></a>
+          <button onClick={props.openProduct}>Find my perfect fit</button>
+        </div>
+      )}
+    </>
+  );
+}
+
+function AfterSite(props: {
+  openProduct: () => void;
+  openFit: () => void;
+  menuOpen: boolean;
+  setMenuOpen: (open: boolean) => void;
+}) {
+  return (
+    <main id="top" className="after-site">
+      <Header openProduct={props.openProduct} menuOpen={props.menuOpen} setMenuOpen={props.setMenuOpen} />
+
+      <section className="hero">
+        <div className="hero-copy">
+          <p className="micro-label"><i /> APMA ACCEPTED COMFORT</p>
+          <h1>The heel<br />you won’t<br /><em>kick off.</em></h1>
+          <p className="hero-intro">Elegant enough for every plan. Cushioned, flexible and available in wide fits—so your day never ends because your shoes do.</p>
+          <div className="hero-cta-row">
+            <button className="dark-cta" onClick={props.openProduct}>Shop GraceLithe <span>↗</span></button>
+            <button className="fit-link" onClick={props.openFit}>✦ Find my fit in 60 sec</button>
           </div>
-          <BottomNav view={view} go={go} mode={mode} />
+          <div className="hero-rating">
+            <span>★★★★★</span>
+            <b>4.9</b>
+            <small>from 4,500+ happy feet</small>
+          </div>
+        </div>
+        <div className="hero-image">
+          <img src="./hero.jpg" alt="Cosy Island comfort shoes" />
+          <div className="hero-product">
+            <img src="./shoe-1.jpg" alt="GraceLithe Mule" />
+            <div><span>THE GRACELITHE</span><b>$109</b></div>
+            <button onClick={props.openProduct} aria-label="View GraceLithe">+</button>
+          </div>
+          <p className="vertical-note">BEAUTIFUL BY DESIGN · COMFORTABLE BY NATURE</p>
         </div>
       </section>
 
-      {fitOpen && <FitAssistant step={fitStep} setStep={setFitStep} close={() => setFitOpen(false)}
-        choose={() => { setSize("7"); setWidth("Wide"); setFitOpen(false); }} />}
+      <div className="feature-marquee" aria-label="Product features">
+        <span>ARCH SUPPORT</span><i>✦</i><span>FLEXIBLE KNIT</span><i>✦</i><span>REGULAR + WIDE</span><i>✦</i><span>STABLE 2.8″ HEEL</span><i>✦</i><span>30-DAY RETURNS</span>
+      </div>
+
+      <section className="comfort-editorial" id="comfort">
+        <div className="section-number">01 — WHY THEY FEEL DIFFERENT</div>
+        <div className="comfort-headline">
+          <h2>Comfort,<br /><em>engineered</em><br />beautifully.</h2>
+          <p>We rebuilt the classic heel around the foot—not the other way around. Every layer flexes, cushions and supports.</p>
+        </div>
+        <div className="comfort-stage">
+          <div className="material-word">AIRWEAVE</div>
+          <img src="./shoe-4.jpg" alt="GraceLithe side profile" />
+          <div className="feature-point point-one"><b>01</b><span><strong>Moves with you</strong>Stretch knit releases pressure at the toe.</span></div>
+          <div className="feature-point point-two"><b>02</b><span><strong>Soft where it matters</strong>Layered cushioning absorbs every step.</span></div>
+          <div className="feature-point point-three"><b>03</b><span><strong>Steady, not stiff</strong>Balanced heel geometry keeps you grounded.</span></div>
+        </div>
+      </section>
+
+      <section className="best-sellers" id="shop">
+        <div className="section-topline">
+          <div><span>02 — THE EDIT</span><h2>Most loved,<br /><em>most lived in.</em></h2></div>
+          <button onClick={props.openProduct}>Shop all styles <span>↗</span></button>
+        </div>
+        <div className="product-grid">
+          {products.map((item, index) => (
+            <article className={"product-card card-" + (index + 1)} key={item.name}>
+              <button className="product-image-button" onClick={props.openProduct} aria-label={"View " + item.name}>
+                <img src={item.image} alt={item.name} />
+                {index === 0 && <span className="best-pill">BEST SELLER</span>}
+                <span className="quick-add">Quick add</span>
+              </button>
+              <div className="product-meta">
+                <div><h3>{item.name}</h3><p>{item.note}</p></div><strong>{item.price}</strong>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="review-editorial" id="reviews">
+        <div className="review-photo"><img src="./shoe-2.jpg" alt="GraceLithe top view" /><span>WORN FOR 11 HOURS</span></div>
+        <div className="review-copy">
+          <p className="micro-label light"><i /> VERIFIED BUYER</p>
+          <blockquote>“From the office to dinner—and I never once thought about my feet.”</blockquote>
+          <div className="review-person"><span>JM</span><div><b>Jessica M.</b><small>New York · Wide fit</small></div><strong>★★★★★</strong></div>
+          <div className="review-stats"><div><b>94%</b><span>say true to size</span></div><div><b>4.9/5</b><span>average rating</span></div><div><b>362</b><span>verified reviews</span></div></div>
+        </div>
+      </section>
+
+      <section className="wide-story" id="story">
+        <div className="wide-copy">
+          <span>03 — FIT IS PERSONAL</span>
+          <h2>More room.<br />Less guessing.</h2>
+          <p>Feet aren’t one-width-fits-all. Selected styles come in Regular A–C and Wide D–E, while our AI Fit assistant learns from real customer feedback to recommend yours.</p>
+          <button className="outline-cta" onClick={props.openFit}>✦ Find my fit</button>
+        </div>
+        <div className="wide-image">
+          <img src="./shoe-3.jpg" alt="GraceLithe flexible fit" />
+          <div className="fit-scale"><span>A</span><span>B</span><span>C</span><span>D</span><span>E</span><i /></div>
+          <p>REGULAR <b>← YOUR FOOT →</b> WIDE</p>
+        </div>
+      </section>
+
+      <section className="social-section">
+        <div className="social-heading"><span>@COSYISLAND_OFFICIAL</span><h2>Real days.<br />Real outfits.<br /><em>Real comfort.</em></h2></div>
+        <div className="social-grid">
+          <div><img src="./shoe-5.jpg" alt="Cosy Island social style one" /><span>18K SAVES</span></div>
+          <div><img src="./shoe-1.jpg" alt="Cosy Island social style two" /><span>1.2M VIEWS</span></div>
+          <div><img src="./shoe-6.jpg" alt="Cosy Island social style three" /><span>SHOP THE LOOK</span></div>
+        </div>
+      </section>
+
+      <footer className="site-footer">
+        <div className="footer-wordmark">COSY ISLAND</div>
+        <div className="footer-grid">
+          <div><span>STAY IN STEP</span><h3>New drops, fit advice,<br />and very good shoes.</h3><div className="email-field"><input aria-label="Email address" placeholder="Email address" /><button>Join →</button></div></div>
+          <div><span>SHOP</span><a href="#shop">Best sellers</a><a href="#shop">Heels</a><a href="#shop">Flats</a><a href="#shop">Wide fit</a></div>
+          <div><span>ABOUT</span><a href="#comfort">Our comfort</a><a href="#story">Our story</a><a href="#reviews">Reviews</a><a href="#top">Fit guide</a></div>
+          <div><span>FOLLOW</span><a href="#top">Instagram</a><a href="#top">TikTok</a><a href="#top">Pinterest</a></div>
+        </div>
+        <div className="footer-bottom"><span>© 2026 COSY ISLAND</span><span>NEW YORK · SHANGHAI · EVERYWHERE YOU GO</span><span>Privacy · Terms</span></div>
+      </footer>
     </main>
   );
 }
 
-function PitchStep(props: { no: string; title: string; copy: string; active: boolean; onClick: () => void }) {
-  return <button className={props.active ? "active" : ""} onClick={props.onClick}>
-    <span>{props.no}</span><b>{props.title}</b><small>{props.copy}</small>
-  </button>;
+function BeforeSite(props: { openProduct: () => void; menuOpen: boolean; setMenuOpen: (open: boolean) => void }) {
+  return (
+    <main id="top" className="before-site">
+      <Header before openProduct={props.openProduct} menuOpen={props.menuOpen} setMenuOpen={props.setMenuOpen} />
+      <section className="old-hero">
+        <img src="./hero.jpg" alt="Cosy Island campaign" />
+        <div className="old-hero-shade" />
+        <div className="old-hero-copy"><span>SPRING EDIT</span><h1>In Summer&apos;s Wake,<br />Savings Gently Arrive</h1><p>UP TO 50% OFF</p><button onClick={props.openProduct}>DISCOVER NOW</button></div>
+      </section>
+      <div className="old-benefits"><span>FREE SHIPPING</span><span>30-DAY RETURNS</span><span>SECURE PAYMENTS</span><span>ONLINE SUPPORT</span></div>
+      <section className="old-shop" id="shop">
+        <p>OUR PICKS</p><h2>Best Sellers</h2>
+        <div className="old-grid">
+          {products.map(item => <article key={item.name}><button onClick={props.openProduct}><img src={item.image} alt={item.name} /><span>♡</span></button><h3>{item.name}</h3><p>★★★★★ 4.9</p><b>{item.price}</b></article>)}
+        </div>
+      </section>
+      <section className="old-promo"><p>NEW SEASON</p><h2>Find Your<br />Perfect Pair</h2><span>Explore new arrivals designed for every moment.</span><button onClick={props.openProduct}>SHOP ALL</button></section>
+      <section className="old-newsletter"><h2>Join our world</h2><p>Sign up for exclusive offers and new arrivals.</p><div><input placeholder="Your email" aria-label="Your email" /><button>SUBSCRIBE</button></div></section>
+      <footer className="old-footer"><b>COSY ISLAND</b><p>SHOP · ABOUT · CONTACT · RETURNS</p><small>© 2026 COSY ISLAND. ALL RIGHTS RESERVED.</small></footer>
+    </main>
+  );
 }
 
-function SiteHeader({ mode, go }: { mode: Mode; go: (view: View) => void }) {
-  return <>
-    <div className="promo-strip">{mode === "before" ? "SPRING SALE · UP TO 50% OFF" : "FREE SHIPPING & EASY RETURNS"}</div>
-    <header className="site-header">
-      <button className="icon-button" aria-label="菜单">☰</button>
-      <button className="wordmark" onClick={() => go("home")}>COSY ISLAND</button>
-      <button className="icon-button bag" aria-label="购物袋">♢<i>0</i></button>
-    </header>
-  </>;
-}
-
-function BeforeHome({ go }: { go: (view: View) => void }) {
-  return <div className="before-page">
-    <section className="before-hero">
-      <img src="/hero.jpg" alt="Cosy Island campaign" />
-      <div className="before-hero-copy">
-        <p>SPRING EDIT</p>
-        <h2>In Summer&apos;s Wake,<br />Savings Gently Arrive</h2>
-        <button onClick={() => go("product")}>DISCOVER NOW</button>
-      </div>
-      <Problem className="tag-hero">先讲促销，没讲清为什么值得买</Problem>
-    </section>
-    <div className="old-trust-row"><span>FREE SHIPPING</span><span>30-DAY RETURNS</span><span>SECURE PAYMENTS</span></div>
-    <section className="old-products">
-      <p className="eyebrow">OUR PICKS</p><h3>Best Sellers</h3>
-      <div className="old-product-grid">
-        <ProductTile image="/shoe-1.jpg" name="GraceLithe Mule" />
-        <ProductTile image="/shoe-5.jpg" name="Pointed Toe Heel" />
-      </div>
-      <Problem>手机上信息挤，关键卖点要翻很久才看到</Problem>
-    </section>
-    <section className="old-copy-block"><h3>Find Your Perfect Pair</h3><p>Explore new arrivals designed for every moment.</p><button>SHOP ALL</button></section>
-    <div className="floating-gift">🎁</div><div className="floating-chat">⌁</div>
-  </div>;
-}
-
-function AfterHome({ go }: { go: (view: View) => void }) {
-  return <div className="after-page">
-    <section className="new-hero">
-      <img src="/hero.jpg" alt="Woman holding comfortable Cosy Island shoes" />
-      <div className="hero-shade" />
-      <div className="new-hero-copy">
-        <span className="proof-chip">APMA Accepted · Comfort-led design</span>
-        <h2>Beautiful shoes.<br /><em>Built for real comfort.</em></h2>
-        <p>Flexible knit. Cushioned support. Regular and wide fits—made for workdays, weddings and everything after.</p>
-        <div className="hero-actions"><button className="primary" onClick={() => go("product")}>Find my perfect fit</button><button className="text-link" onClick={() => go("product")}>Shop best sellers →</button></div>
-      </div>
-      <Improve className="tag-hero-new">第一屏就把“好看 + 舒服”讲明白</Improve>
-    </section>
-    <div className="proof-band">
-      <div><b>4.9 ★</b><span>4,500+ happy feet</span></div>
-      <div><b>Wide fit</b><span>A–E widths</span></div>
-      <div><b>30 days</b><span>Easy returns</span></div>
-    </div>
-    <section className="comfort-story">
-      <span className="section-kicker">WHY THEY FEEL DIFFERENT</span><h3>Comfort you can see.</h3>
-      <div className="comfort-visual">
-        <img src="/shoe-4.jpg" alt="GraceLithe heel" />
-        <span className="hotspot h1"><i>1</i><b>Stretch knit</b></span>
-        <span className="hotspot h2"><i>2</i><b>Cloud-soft insole</b></span>
-        <span className="hotspot h3"><i>3</i><b>Stable 2.8″ heel</b></span>
-      </div>
-      <p>Less pressure at the toe. More support underfoot. A heel made to keep going when your day does.</p>
-      <button className="outline" onClick={() => go("product")}>See the GraceLithe</button>
-    </section>
-    <section className="review-story">
-      <div className="quote-mark">“</div><blockquote>I wore them from the office straight to dinner—no backup flats needed.</blockquote>
-      <div className="reviewer"><span className="avatar">JM</span><p><b>Jessica M.</b><small>Verified buyer · Wide fit</small></p><span className="stars">★★★★★</span></div>
-      <Improve>真实的人怎么穿，比一句“我们很舒服”更可信</Improve>
-    </section>
-    <section className="social-proof">
-      <div className="social-title"><div><span className="section-kicker">@COSYISLAND_OFFICIAL</span><h3>Seen on real women</h3></div><span>→</span></div>
-      <div className="ugc-grid"><div className="ugc-card"><img src="/shoe-2.jpg" alt="Shoe styling" /><span>Work to dinner</span></div><div className="ugc-card"><img src="/shoe-6.jpg" alt="Shoe detail" /><span>12k saves</span></div></div>
-    </section>
-    <section className="ai-readable">
-      <span>FOR GOOGLE & AI ANSWERS</span><h3>One clear answer to every buying question.</h3>
-      <details><summary>Are Cosy Island heels good for wide feet?</summary><p>Yes. Selected styles are made in Regular A–C and Wide D–E fits, with flexible knit that adapts without pinching.</p></details>
-      <details><summary>Can I wear them all day?</summary><p>GraceLithe combines arch support, a padded insole and a stable heel for extended wear.</p></details>
-      <Improve>说得清楚，Google 和 ChatGPT 才知道该推荐谁</Improve>
-    </section>
-  </div>;
-}
-
-function BeforeProduct() {
-  return <div className="before-product">
-    <div className="old-gallery"><img src="/shoe-1.jpg" alt={product.name} /><span>1 / 12</span></div>
-    <div className="old-pdp-copy">
-      <div className="old-badges"><b>BEST SELLER</b><b>ALL-DAY COMFORT</b><b>WIDE FIT</b></div>
-      <h2>{product.name}</h2><p className="rating">★★★★★ {product.rating} ({product.reviews})</p><strong>{product.price}</strong>
-      <Picker label="Version" items={["Standard", "Low Heeled", "Bow ED", "Denim ED"]} />
-      <Picker label="Color" items={["Leopard", "Black", "Brown", "Oat", "Red", "Navy", "Denim"]} />
-      <Picker label="Fit" items={["Regular (A-C)", "Wide (D-E)"]} />
-      <Picker label="Size" items={["5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10", "11", "12"]} />
-      <Problem>一口气让客人选 4 组，手机上很容易放弃</Problem>
-      <button className="old-add">ADD TO CART</button>
-      <div className="accordions"><span>DESCRIPTION ＋</span><span>SHIPPING ＋</span><span>SIZE GUIDE ＋</span></div>
-    </div>
-  </div>;
-}
-
-function Picker({ label, items }: { label: string; items: string[] }) {
-  return <div className="old-picker"><b>{label}</b><div>{items.map((item, i) => <button className={i === 0 ? "chosen" : ""} key={item}>{item}</button>)}</div></div>;
-}
-
-function AfterProduct(props: {
-  size: string; setSize: (v: string) => void; width: string; setWidth: (v: string) => void;
-  openFit: () => void; added: boolean; add: () => void;
+function ProductDrawer(props: {
+  close: () => void;
+  openFit: () => void;
+  size: string;
+  setSize: (size: string) => void;
+  width: string;
+  setWidth: (width: string) => void;
+  added: boolean;
+  add: () => void;
 }) {
-  return <div className="new-product">
-    <div className="new-gallery"><img src="/shoe-1.jpg" alt={product.name} /><span className="gallery-badge">BEST SELLER</span><button aria-label="收藏">♡</button><div className="gallery-dots"><i className="active" /><i /><i /><i /></div></div>
-    <div className="new-pdp-copy">
-      <p className="rating"><span>★★★★★</span> {product.rating} · <u>{product.reviews}</u></p>
-      <h2>{product.name}</h2><div className="price-line"><strong>{product.price}</strong><span>or 4 payments of $27.25</span></div>
-      <div className="pdp-proof"><b>✓ APMA Accepted</b><b>✓ All-day cushioning</b><b>✓ Regular + wide</b></div>
-      <div className="fit-callout"><div className="fit-icon">✦</div><div><b>Not sure about your size?</b><p>Answer 3 quick questions. We’ll recommend your best fit.</p></div><button onClick={props.openFit}>Ask AI Fit →</button></div>
-      <Improve>把最容易卡住的“选码”变成有人帮</Improve>
-      <div className="clean-picker"><div className="picker-heading"><b>Color</b><span>Leopard Knit</span></div><div className="swatches"><button className="leopard selected" aria-label="Leopard" /><button className="black" aria-label="Black" /><button className="oat" aria-label="Oat" /></div></div>
-      <div className="clean-picker">
-        <div className="picker-heading"><b>Width</b><button onClick={props.openFit}>Which width am I?</button></div>
-        <div className="wide-options">{["Regular", "Wide"].map(v => <button key={v} onClick={() => props.setWidth(v)} className={props.width === v ? "selected" : ""}>{v}<small>{v === "Regular" ? "A–C" : "D–E"}</small></button>)}</div>
-      </div>
-      <div className="clean-picker">
-        <div className="picker-heading"><b>US Size</b><button>Size guide</button></div>
-        <div className="size-options">{["6", "6.5", "7", "7.5", "8", "8.5", "9"].map(v => <button key={v} onClick={() => props.setSize(v)} className={props.size === v ? "selected" : ""}>{v}</button>)}</div>
-      </div>
-      <div className="fit-summary"><span>Recommended for you</span><b>US {props.size} · {props.width}</b><small>Free exchange if the fit isn’t right.</small></div>
-      <button className={"sticky-add " + (props.added ? "added" : "")} onClick={props.add}>{props.added ? "✓ Added to bag" : "Add to bag · " + product.price}</button>
-      <section className="detail-proof"><h3>Why your feet will notice.</h3><div><img src="/shoe-3.jpg" alt="Flexible upper" /><p><b>Moves with you</b><span>Breathable Airweave knit flexes where feet usually pinch.</span></p></div><div><img src="/shoe-2.jpg" alt="Cushioned insole" /><p><b>Soft landing, every step</b><span>Layered cushioning and arch support spread pressure evenly.</span></p></div></section>
+  return (
+    <div className="drawer-backdrop" role="dialog" aria-modal="true" aria-label="GraceLithe product">
+      <button className="drawer-dismiss" onClick={props.close} aria-label="Close product" />
+      <aside className="product-drawer">
+        <div className="drawer-top"><span>THE GRACELITHE</span><button onClick={props.close}>×</button></div>
+        <div className="drawer-product-image"><img src="./shoe-1.jpg" alt="GraceLithe Pointed Toe Heeled Mule" /><span>BEST SELLER</span></div>
+        <div className="drawer-content">
+          <p className="drawer-rating"><span>★★★★★</span> 4.9 · <u>362 reviews</u></p>
+          <h2>GraceLithe Pointed Toe Heeled Mule</h2>
+          <div className="drawer-price"><b>$109</b><span>or 4 payments of $27.25</span></div>
+          <div className="drawer-proof"><span>✓ APMA Accepted</span><span>✓ All-day cushioning</span><span>✓ Wide fit</span></div>
+          <button className="ai-fit-callout" onClick={props.openFit}><span>✦</span><div><b>Not sure about your size?</b><small>Get your AI fit in 60 seconds.</small></div><i>→</i></button>
+          <div className="option-row"><div><b>Color</b><span>Leopard Knit</span></div><div className="drawer-swatches"><button className="leopard active" aria-label="Leopard" /><button className="black" aria-label="Black" /><button className="sand" aria-label="Sand" /></div></div>
+          <div className="option-row"><div><b>Width</b><button onClick={props.openFit}>Which width am I?</button></div><div className="width-grid">{["Regular", "Wide"].map(item => <button key={item} className={props.width === item ? "active" : ""} onClick={() => props.setWidth(item)}>{item}<small>{item === "Regular" ? "A–C" : "D–E"}</small></button>)}</div></div>
+          <div className="option-row"><div><b>US Size</b><button>Size guide</button></div><div className="size-grid">{["6", "6.5", "7", "7.5", "8", "8.5", "9"].map(item => <button key={item} className={props.size === item ? "active" : ""} onClick={() => props.setSize(item)}>{item}</button>)}</div></div>
+          <button className={"add-bag " + (props.added ? "added" : "")} onClick={props.add}>{props.added ? "✓ Added to bag" : "Add to bag · $109"}</button>
+          <p className="drawer-return">Free shipping · Free size exchange · 30-day returns</p>
+        </div>
+      </aside>
     </div>
-  </div>;
+  );
 }
 
-function BeforeSocial() {
-  return <div className="before-social">
-    <div className="social-ad-mock"><span>TikTok ad</span><b>“The heels I wore for 9 hours…”</b><small>Tap to shop</small></div>
-    <div className="disconnect">↓ 点进去 ↓</div><BeforeHome go={() => undefined} />
-    <Problem>广告讲“走一天不累”，落地页却先讲打折——客人会觉得点错了</Problem>
-  </div>;
-}
-
-function AfterSocial({ source, setSource, go }: { source: Source; setSource: (v: Source) => void; go: (v: View) => void }) {
-  const content = useMemo(() => ({
-    TikTok: { label: "9-hour heel test", metric: "1.2M views", quote: "The first heel I didn’t kick off under the table." },
-    Instagram: { label: "Desk-to-dinner edit", metric: "18k saves", quote: "One pair. Three looks. Zero backup flats." },
-    Pinterest: { label: "Wedding guest comfort", metric: "42k monthly saves", quote: "Elegant enough for photos, comfortable enough for dancing." },
-  }[source]), [source]);
-  return <div className="new-social">
-    <div className="source-tabs">{(["TikTok", "Instagram", "Pinterest"] as Source[]).map(item => <button key={item} onClick={() => setSource(item)} className={source === item ? "selected" : ""}>{item}</button>)}</div>
-    <section className="social-landing-hero">
-      <div className="creator-video"><img src="/shoe-4.jpg" alt="GraceLithe heel from social video" /><span className="play">▶</span><b>{content.label}</b><small>{content.metric}</small></div>
-      <div className="continuity-copy"><span>YOU SAW IT. HERE IT IS.</span><h2>{content.quote}</h2><p>Meet GraceLithe: the flexible, cushioned heel made for long days and late nights.</p></div>
-      <Improve>广告讲什么，落地页第一屏就接着讲什么</Improve>
-    </section>
-    <section className="social-product-card"><img src="/shoe-1.jpg" alt={product.name} /><div><p className="rating"><span>★★★★★</span> {product.rating}</p><h3>GraceLithe Mule</h3><span>{product.price}</span><b>Regular + Wide Fit</b></div></section>
-    <div className="micro-proof"><span>✓ 362 verified reviews</span><span>✓ 30-day returns</span><span>✓ Free shipping</span></div>
-    <section className="creator-proof"><span>WHY SHE KEPT THEM ON</span><Reason no="01" title="No toe squeeze" copy="Stretch knit adapts as feet swell through the day." /><Reason no="02" title="No wobble" copy="A balanced 2.8″ heel feels steady from commute to cocktails." /><Reason no="03" title="No size guesswork" copy="AI Fit helps choose regular or wide in under a minute." /></section>
-    <button className="social-cta" onClick={() => go("product")}>Find my fit · Shop GraceLithe</button>
-    <Improve>同一套内容还能按 TikTok / Instagram / Pinterest 分开接流量</Improve>
-  </div>;
-}
-
-function Reason({ no, title, copy }: { no: string; title: string; copy: string }) {
-  return <div className="reason"><b>{no}</b><p><strong>{title}</strong><small>{copy}</small></p></div>;
-}
-
-function FitAssistant({ step, setStep, close, choose }: { step: number; setStep: (v: number) => void; close: () => void; choose: () => void }) {
-  return <div className="modal-backdrop" role="dialog" aria-modal="true">
-    <div className="fit-sheet">
-      <div className="sheet-handle" /><button className="sheet-close" onClick={close}>×</button><span className="ai-label">✦ COSY AI FIT</span>
-      {step === 0 && <><h2>Let’s find your best fit.</h2><p>Three quick answers. No measuring tape needed.</p><Progress step={1} /><h3>How do most shoes feel across your toes?</h3><div className="answer-list"><button onClick={() => setStep(1)}>Usually comfortable <span>→</span></button><button onClick={() => setStep(1)}>Often a little tight <span>→</span></button><button onClick={() => setStep(1)}>I usually buy wide <span>→</span></button></div></>}
-      {step === 1 && <><h2>Almost there.</h2><p>We use this to compare real fit feedback.</p><Progress step={2} /><h3>What size do you wear most often?</h3><div className="size-answer">{["6.5", "7", "7.5", "8", "8.5", "9"].map(s => <button onClick={() => setStep(2)} key={s}>{s}</button>)}</div><button className="back" onClick={() => setStep(0)}>← Back</button></>}
-      {step === 2 && <><div className="fit-result-mark">91%</div><h2>Your best match</h2><div className="result-size"><span>GraceLithe Mule</span><b>US 7 · Wide (D–E)</b></div><ul><li>Wide fit gives your toes more room.</li><li>Most similar shoppers kept their usual size.</li><li>Flexible knit adapts during longer wear.</li></ul><button className="use-fit" onClick={choose}>Use this size</button><small className="fit-disclaimer">Fit recommendation for demo purposes. Free exchange still applies.</small></>}
+function FitAssistant(props: { step: number; setStep: (step: number) => void; close: () => void; choose: () => void }) {
+  return (
+    <div className="fit-backdrop" role="dialog" aria-modal="true" aria-label="AI Fit assistant">
+      <div className="fit-modal">
+        <button className="fit-close" onClick={props.close}>×</button>
+        <div className="fit-brand"><span>✦</span>COSY AI FIT</div>
+        {props.step < 2 && <div className="fit-progress"><i className="active" /><i className={props.step >= 1 ? "active" : ""} /><i /></div>}
+        {props.step === 0 && <>
+          <p>QUESTION 1 OF 2</p><h2>How do most shoes feel across your toes?</h2><span className="fit-helper">No measuring tape needed. Just think about your usual pair.</span>
+          <div className="fit-answers"><button onClick={() => props.setStep(1)}>Usually comfortable <i>→</i></button><button onClick={() => props.setStep(1)}>Often a little tight <i>→</i></button><button onClick={() => props.setStep(1)}>I usually buy wide <i>→</i></button></div>
+        </>}
+        {props.step === 1 && <>
+          <p>QUESTION 2 OF 2</p><h2>What size do you wear most often?</h2><span className="fit-helper">We compare your answer with thousands of real fit reviews.</span>
+          <div className="fit-sizes">{["6.5", "7", "7.5", "8", "8.5", "9"].map(item => <button key={item} onClick={() => props.setStep(2)}>{item}</button>)}</div>
+          <button className="fit-back" onClick={() => props.setStep(0)}>← Back</button>
+        </>}
+        {props.step === 2 && <>
+          <div className="fit-score">91%<small>FIT MATCH</small></div><p>YOUR BEST MATCH</p><h2>US 7 · Wide</h2>
+          <div className="fit-reasons"><span>More room across the toe</span><span>Stay with your usual length</span><span>Flexible knit adapts during wear</span></div>
+          <button className="use-fit" onClick={props.choose}>Use this fit</button><small className="fit-note">Free size exchange if it’s not perfect.</small>
+        </>}
+      </div>
     </div>
-  </div>;
-}
-
-function Progress({ step }: { step: number }) {
-  return <div className="fit-progress"><i className={step >= 1 ? "active" : ""} /><i className={step >= 2 ? "active" : ""} /><i className={step >= 3 ? "active" : ""} /></div>;
-}
-
-function BottomNav({ view, go, mode }: { view: View; go: (v: View) => void; mode: Mode }) {
-  return <nav className={"bottom-nav " + mode}>
-    <button onClick={() => go("home")} className={view === "home" ? "active" : ""}><span>⌂</span>首页</button>
-    <button onClick={() => go("product")} className={view === "product" ? "active" : ""}><span>♢</span>商品页</button>
-    <button onClick={() => go("social")} className={view === "social" ? "active" : ""}><span>◎</span>社媒页</button>
-  </nav>;
-}
-
-function ProductTile({ image, name }: { image: string; name: string }) {
-  return <div><img src={image} alt={name} /><span>♡</span><p>{name}</p><b>$109</b></div>;
-}
-
-function Problem({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={"problem-tag " + className}><span>问题</span>{children}</div>;
-}
-
-function Improve({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={"improve-tag " + className}><span>变化</span>{children}</div>;
+  );
 }
